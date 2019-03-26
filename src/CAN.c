@@ -4,6 +4,39 @@
 #define MESSAGES_BUFF	32
 #define DATA_LENGTH_MB	8
 
+uint32_t  RxCODE;              /* Received message buffer code */
+uint32_t  RxID;                /* Received message ID */
+uint32_t  RxLENGTH;            /* Recieved message number of data bytes */
+uint32_t  RxDATA[2];           /* Received message data (2 words) */
+uint32_t  RxTIMESTAMP;         /* Received message time */
+
+static void CAN0_setBitTime(bitTime_t bitTime)
+{
+	switch(bitTime)
+	{
+	case B10KHZ:
+		break;
+	case B20KHZ:
+		break;
+	case B50KHZ:
+		break;
+	case B125KHZ:
+		break;
+	case B250KHZ:
+		break;
+	case B500KHZ:
+		break;
+	case B800KHZ:
+		break;
+	case B1MHZ:
+		break;
+	default:
+		break;
+	}
+	/*Configure the bit time*/
+	CAN0->CTRL1 |= 0x00DB0006;
+}
+
 void CAN0_init(clkSource_t clkSource, bitTime_t bitTime)
 {
 	uint32_t counter;
@@ -40,6 +73,15 @@ void CAN0_init(clkSource_t clkSource, bitTime_t bitTime)
 	for(counter = 0; counter < 16; counter++)
 		CAN0->RXIMR[counter] = 0xFFFFFFFF;
 
+	CAN0->RXMGMASK = 0xFFFFFF;
+	CAN0->RAMn[4*DATA_LENGTH_MB] = 0x04000000;
+
+	/* Node A receives msg with std ID 0x511 */
+	CAN0->RAMn[ 4*DATA_LENGTH_MB + 1] = 0x14440000; /* Msg Buf 4, word 1: Standard ID = 0x111 */
+
+	/* PRIO = 0: CANFD not used */
+	CAN0->MCR = 0x0000001F;       /* Negate FlexCAN 1 halt state for 32 MBs */
+
 	/*Wait for FRZACK to be unfrozen*/
 	while ((CAN0->MCR && CAN_MCR_FRZACK_MASK) >> CAN_MCR_FRZACK_SHIFT);
 
@@ -49,30 +91,50 @@ void CAN0_init(clkSource_t clkSource, bitTime_t bitTime)
 	return;
 }
 
-
-static void CAN0_setBitTime(bitTime_t bitTime)
+void CAN_Transmitter(void)
 {
-	switch(bitTime)
-	{
-	case B10KHZ:
-		break;
-	case B20KHZ:
-		break;
-	case B50KHZ:
-		break;
-	case B125KHZ:
-		break;
-	case B250KHZ:
-		break;
-	case B500KHZ:
-		break;
-	case B800KHZ:
-		break;
-	case B1MHZ:
-		break;
-	default:
-		break;
-	}
-	/*Configure the bit time*/
-	//CAN0->CTRL1 |= bitTime;
+	/* Clear CAN 0 MB 0 flag without clearing others*/
+	CAN0->IFLAG1 = 0x00000001;
+
+	/* MB0 word 2: data word 0 */
+	CAN0->RAMn[ 0*DATA_LENGTH_MB + 2] = 0xA5112233;
+
+	/* MB0 word 3: data word 1 */
+	CAN0->RAMn[ 0*DATA_LENGTH_MB + 3] = 0x44556677;
+
+	/* MB0 word 1: Tx msg with STD ID 0x555 */
+	CAN0->RAMn[ 0*DATA_LENGTH_MB + 1] = 0x15540000;
+	CAN0->RAMn[ 0*DATA_LENGTH_MB + 0] = 0x0C400000 | 8 <<CAN_WMBn_CS_DLC_SHIFT; /* MB0 word 0: */
+	                                                /* EDL,BRS,ESI=0: CANFD not used */
+	                                                /* CODE=0xC: Activate msg buf to transmit */
+	                                                /* IDE=0: Standard ID */
+	                                                /* SRR=1 Tx frame (not req'd for std ID) */
+	                                                /* RTR = 0: data, not remote tx request frame*/
+	                                                /* DLC = 8 bytes */
+}
+
+void CAN_Receiver(void)/* Receive msg from ID 0x556 using msg buffer 4 */
+{
+	  uint8_t j;
+	  uint32_t dummy;
+
+	  /* If CAN 0 MB 4 flag is set (received msg), read MB4 */
+	  if ((CAN0->IFLAG1 >> 4) & 1)
+	  {
+		  /* Read CODE field */
+		  RxCODE   = (CAN0->RAMn[ 4*DATA_LENGTH_MB + 0] & 0x07000000) >> 24;
+		  RxID     = (CAN0->RAMn[ 4*DATA_LENGTH_MB + 1] & CAN_WMBn_ID_ID_MASK)  >> CAN_WMBn_ID_ID_SHIFT ;
+		  RxLENGTH = (CAN0->RAMn[ 4*DATA_LENGTH_MB + 0] & CAN_WMBn_CS_DLC_MASK) >> CAN_WMBn_CS_DLC_SHIFT;
+
+		  /* Read two words of data (8 bytes) */
+		  for (j=0; j<2; j++) {
+		    RxDATA[j] = CAN0->RAMn[ 4*DATA_LENGTH_MB + 2 + j];
+		  }
+		  RxTIMESTAMP = (CAN0->RAMn[ 0*DATA_LENGTH_MB + 0] & 0x000FFFF);
+
+		  /* Read TIMER to unlock message buffers */
+		  dummy = CAN0->TIMER;
+		  /* Clear CAN 0 MB 4 flag without clearing others*/
+		  CAN0->IFLAG1 = 0x00000010;
+	  }
 }
