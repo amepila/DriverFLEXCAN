@@ -49,8 +49,8 @@
 
 Rx_t	rx;		/*Structure of Rx*/
 
-/*Setup the configurations of the frame betweeen eight options*/
-static void CAN0_SetBitTime(clkSource_t clkSource, bitTime_t bitTime, Timing_t timing)
+/*Setup the configurations of the frame between eight options*/
+static void CAN_SetBitTime(PortCAN_t portCAN, clkSource_t clkSource, bitTime_t bitTime, Timing_t timing)
 {
 	uint32_t time_quanta;		/*Value of time quantum*/
 	uint32_t FrequencyTimeQ;	/*Frequency time quantum*/
@@ -97,160 +97,447 @@ static void CAN0_SetBitTime(clkSource_t clkSource, bitTime_t bitTime, Timing_t t
 	/*Calculate the prescaler divisor*/
 	PresDiv = (clkSource/FrequencyTimeQ) -  1;
 
-	/*AssigN the Prescaler divisor*/
-	CAN0->CTRL1 |= PresDiv << SHIFT_PRESDIV;
-
 	/*Calculate the phase segment 1*/
 	Pseg1 = timing.phaseSeg1 + 1;
-
-	/*Assign the Phase Segment 1*/
-	CAN0->CTRL1 |= Pseg1 << SHIFT_PSEG1;
 
 	/*Calculate the phase segment 2*/
 	Pseg2 = timing.phaseSeg2 + 1;
 
-	/*Assign the Phase Segment 2*/
-	CAN0->CTRL1 |= Pseg2 << SHIFT_PSEG2;
-
 	/*Calculate the propagation segment*/
 	Proseg = timing.propSeg - 1;
-
-	/*Assign the Propagation Segment*/
-	CAN0->CTRL1 |= Proseg;
 
 	/*Calculate the resync jump width*/
 	Rjw = timing.phaseSeg2 - 1;
 
-	/*Assign the Resyn Jump Width*/
-	CAN0->CTRL1 |= Rjw << SHIFT_RJW;
+	switch(portCAN)
+	{
+	case CAN_0:
+		/*AssigN the Prescaler divisor*/
+		CAN0->CTRL1 |= PresDiv << SHIFT_PRESDIV;
 
-	/*Assign the Sampling bit*/
-	CAN0->CTRL1 |= timing.bitSampling << SHIFT_SMP;
+		/*Assign the Phase Segment 1*/
+		CAN0->CTRL1 |= Pseg1 << SHIFT_PSEG1;
 
+		/*Assign the Phase Segment 2*/
+		CAN0->CTRL1 |= Pseg2 << SHIFT_PSEG2;
+
+		/*Assign the Resyn Jump Width*/
+		CAN0->CTRL1 |= Rjw << SHIFT_RJW;
+
+		/*Assign the Propagation Segment*/
+		CAN0->CTRL1 |= Proseg;
+
+		/*Assign the Sampling bit*/
+		CAN0->CTRL1 |= timing.bitSampling << SHIFT_SMP;
+		break;
+	case CAN_1:
+		/*AssigN the Prescaler divisor*/
+		CAN1->CTRL1 |= PresDiv << SHIFT_PRESDIV;
+
+		/*Assign the Phase Segment 1*/
+		CAN1->CTRL1 |= Pseg1 << SHIFT_PSEG1;
+
+		/*Assign the Phase Segment 2*/
+		CAN1->CTRL1 |= Pseg2 << SHIFT_PSEG2;
+
+		/*Assign the Resyn Jump Width*/
+		CAN1->CTRL1 |= Rjw << SHIFT_RJW;
+
+		/*Assign the Propagation Segment*/
+		CAN1->CTRL1 |= Proseg;
+
+		/*Assign the Sampling bit*/
+		CAN1->CTRL1 |= timing.bitSampling << SHIFT_SMP;
+		break;
+	case CAN_2:
+		/*AssigN the Prescaler divisor*/
+		CAN2->CTRL1 |= PresDiv << SHIFT_PRESDIV;
+
+		/*Assign the Phase Segment 1*/
+		CAN2->CTRL1 |= Pseg1 << SHIFT_PSEG1;
+
+		/*Assign the Phase Segment 2*/
+		CAN2->CTRL1 |= Pseg2 << SHIFT_PSEG2;
+
+		/*Assign the Resyn Jump Width*/
+		CAN2->CTRL1 |= Rjw << SHIFT_RJW;
+
+		/*Assign the Propagation Segment*/
+		CAN2->CTRL1 |= Proseg;
+
+		/*Assign the Sampling bit*/
+		CAN2->CTRL1 |= timing.bitSampling << SHIFT_SMP;
+		break;
+	default:
+		break;
+	}
 }
 
-/*Setup the CAN0 with a selectable clock*/
-void CAN0_init(const CAN0_Config_t* CAN0_Config)
+/*Setup the CAN with a selectable clock*/
+void CAN_init(PortCAN_t portCAN, const CAN_Config_t* CAN_Config)
 {
 	uint32_t counter;
 
-	/*Total of words in RAM*/
-	const uint8_t words = MESSAGES_BUFF * WORDS_PER_MB;
+	switch(portCAN)
+	{
+	case CAN_0:
+		/*Enable the clock to CAN0*/
+		PCC->PCCn[PCC_FlexCAN0_INDEX] |= PCC_PCCn_CGC_MASK;
 
-	/*Enable the clock to CAN0*/
-	PCC->PCCn[PCC_FlexCAN0_INDEX] |= PCC_PCCn_CGC_MASK;
-
-	/*Disable the CAN module before selecting clock*/
-	CAN0->MCR |= CAN_MCR_MDIS_MASK;
-
-
-	if (OSCILLATOR_SRC == CAN0_Config->clkSource)
-		/*Choose the Oscillator Clock 8MHz*/
-		CAN0->CTRL1 &= ~CAN_CTRL1_CLKSRC_MASK;
-	else
-		/*Choose the Peripheral Clock*/
-		CAN0->CTRL1 |= CAN_CTRL1_CLKSRC_MASK;
+		/*Disable the CAN module before selecting clock*/
+		CAN0->MCR |= CAN_MCR_MDIS_MASK;
 
 
-	/*Enable the CAN module*/
-	CAN0->MCR &= ~CAN_MCR_MDIS_MASK;
+		if (OSCILLATOR_SRC == CAN_Config->clkSource)
+			/*Choose the Oscillator Clock 8MHz*/
+			CAN0->CTRL1 &= ~CAN_CTRL1_CLKSRC_MASK;
+		else
+			/*Choose the Peripheral Clock*/
+			CAN0->CTRL1 |= CAN_CTRL1_CLKSRC_MASK;
 
-	/*Wait for FRZACK to be frozen*/
-	while (!((CAN0->MCR & CAN_MCR_FRZACK_MASK) >> CAN_MCR_FRZACK_SHIFT));
 
-	/*Now we can change the register in CTRL1*/
-	CAN0_SetBitTime(CAN0_Config->clkSource, CAN0_Config->bitTime, CAN0_Config->timing);
+		/*Enable the CAN module*/
+		CAN0->MCR &= ~CAN_MCR_MDIS_MASK;
 
-	/*Loopback is enabled*/
-	CAN0->CTRL1 |= CAN_CTRL1_LPB_MASK;
+		/*Wait for FRZACK to be frozen*/
+		while (!((CAN0->MCR & CAN_MCR_FRZACK_MASK) >> CAN_MCR_FRZACK_SHIFT));
 
-	/*FIFO is disabled*/
-	CAN0->MCR &= ~ CAN_MCR_RFEN_MASK;
+		/*Now we can change the register in CTRL1*/
+		CAN_SetBitTime(portCAN, CAN_Config->clkSource, CAN_Config->bitTime, CAN_Config->timing);
 
-	/*Self reception is enabled*/
-	CAN0->MCR &= ~ CAN_MCR_SRXDIS_MASK;
+		/*Loopback is enabled*/
+		CAN0->CTRL1 |= CAN_CTRL1_LPB_MASK;
 
-	/*Check all IDs*/
-	for(counter = 0; counter < MB_FILT; counter++)
-		CAN0->RXIMR[counter] = CHECK_ID;
+		/*FIFO is disabled*/
+		CAN0->MCR &= ~ CAN_MCR_RFEN_MASK;
 
-	/*Global acceptance mask to check all the IDs*/
-	CAN0->RXMGMASK = CHECK_ALL_ID;
+		/*Self reception is enabled*/
+		CAN0->MCR &= ~ CAN_MCR_SRXDIS_MASK;
 
-	/*Disable the RX*/
-	CAN0->RAMn[RX_MB4] = DISABLE_RX;
+		/*Check all IDs*/
+		for(counter = 0; counter < MB_FILT; counter++)
+			CAN0->RXIMR[counter] = CHECK_ID;
 
-	/*Assign the standard ID to the next word of MB4*/
-	CAN0->RAMn[RX_MB4 + 1] = TX_ID_WORD;
+		/*Global acceptance mask to check all the IDs*/
+		CAN0->RXMGMASK = CHECK_ALL_ID;
 
-	/*Enable the RX*/
-	CAN0->RAMn[RX_MB4] = ENABLE_RX;
+		/*Disable the RX*/
+		CAN0->RAMn[RX_MB4] = DISABLE_RX;
 
-	/*CAN FD is not used*/
-	CAN0->MCR = CANFD_NOT_USED;
+		/*Assign the standard ID to the next word of MB4*/
+		CAN0->RAMn[RX_MB4 + 1] = TX_ID_WORD;
 
-	/*Wait for FRZACK to be unfrozen*/
-	while ((CAN0->MCR && CAN_MCR_FRZACK_MASK) >> CAN_MCR_FRZACK_SHIFT);
+		/*Enable the RX*/
+		CAN0->RAMn[RX_MB4] = ENABLE_RX;
 
-	/*Wait for CAN Module to be ready*/
-	while ((CAN0->MCR && CAN_MCR_NOTRDY_MASK) >> CAN_MCR_NOTRDY_SHIFT);
+		/*CAN FD is not used*/
+		CAN0->MCR = CANFD_NOT_USED;
+
+		/*Wait for FRZACK to be unfrozen*/
+		while ((CAN0->MCR && CAN_MCR_FRZACK_MASK) >> CAN_MCR_FRZACK_SHIFT);
+
+		/*Wait for CAN Module to be ready*/
+		while ((CAN0->MCR && CAN_MCR_NOTRDY_MASK) >> CAN_MCR_NOTRDY_SHIFT);
+		break;
+
+	case CAN_1:
+		/*Enable the clock to CAN1*/
+		PCC->PCCn[PCC_FlexCAN1_INDEX] |= PCC_PCCn_CGC_MASK;
+
+		/*Disable the CAN module before selecting clock*/
+		CAN1->MCR |= CAN_MCR_MDIS_MASK;
+
+
+		if (OSCILLATOR_SRC == CAN_Config->clkSource)
+			/*Choose the Oscillator Clock 8MHz*/
+			CAN1->CTRL1 &= ~CAN_CTRL1_CLKSRC_MASK;
+		else
+			/*Choose the Peripheral Clock*/
+			CAN1->CTRL1 |= CAN_CTRL1_CLKSRC_MASK;
+
+
+		/*Enable the CAN module*/
+		CAN1->MCR &= ~CAN_MCR_MDIS_MASK;
+
+		/*Wait for FRZACK to be frozen*/
+		while (!((CAN1->MCR & CAN_MCR_FRZACK_MASK) >> CAN_MCR_FRZACK_SHIFT));
+
+		/*Now we can change the register in CTRL1*/
+		CAN_SetBitTime(portCAN, CAN_Config->clkSource, CAN_Config->bitTime, CAN_Config->timing);
+
+		/*Loopback is enabled*/
+		CAN1->CTRL1 |= CAN_CTRL1_LPB_MASK;
+
+		/*FIFO is disabled*/
+		CAN1->MCR &= ~ CAN_MCR_RFEN_MASK;
+
+		/*Self reception is enabled*/
+		CAN1->MCR &= ~ CAN_MCR_SRXDIS_MASK;
+
+		/*Check all IDs*/
+		for(counter = 0; counter < MB_FILT; counter++)
+			CAN1->RXIMR[counter] = CHECK_ID;
+
+		/*Global acceptance mask to check all the IDs*/
+		CAN1->RXMGMASK = CHECK_ALL_ID;
+
+		/*Disable the RX*/
+		CAN1->RAMn[RX_MB4] = DISABLE_RX;
+
+		/*Assign the standard ID to the next word of MB4*/
+		CAN1->RAMn[RX_MB4 + 1] = TX_ID_WORD;
+
+		/*Enable the RX*/
+		CAN1->RAMn[RX_MB4] = ENABLE_RX;
+
+		/*CAN FD is not used*/
+		CAN1->MCR = CANFD_NOT_USED;
+
+		/*Wait for FRZACK to be unfrozen*/
+		while ((CAN1->MCR && CAN_MCR_FRZACK_MASK) >> CAN_MCR_FRZACK_SHIFT);
+
+		/*Wait for CAN Module to be ready*/
+		while ((CAN1->MCR && CAN_MCR_NOTRDY_MASK) >> CAN_MCR_NOTRDY_SHIFT);
+		break;
+
+	case CAN_2:
+		/*Enable the clock to CAN0*/
+		PCC->PCCn[PCC_FlexCAN2_INDEX] |= PCC_PCCn_CGC_MASK;
+
+		/*Disable the CAN module before selecting clock*/
+		CAN2->MCR |= CAN_MCR_MDIS_MASK;
+
+
+		if (OSCILLATOR_SRC == CAN_Config->clkSource)
+			/*Choose the Oscillator Clock 8MHz*/
+			CAN2->CTRL1 &= ~CAN_CTRL1_CLKSRC_MASK;
+		else
+			/*Choose the Peripheral Clock*/
+			CAN2->CTRL1 |= CAN_CTRL1_CLKSRC_MASK;
+
+
+		/*Enable the CAN module*/
+		CAN2->MCR &= ~CAN_MCR_MDIS_MASK;
+
+		/*Wait for FRZACK to be frozen*/
+		while (!((CAN2->MCR & CAN_MCR_FRZACK_MASK) >> CAN_MCR_FRZACK_SHIFT));
+
+		/*Now we can change the register in CTRL1*/
+		CAN_SetBitTime(portCAN, CAN_Config->clkSource, CAN_Config->bitTime, CAN_Config->timing);
+
+		/*Loopback is enabled*/
+		CAN2->CTRL1 |= CAN_CTRL1_LPB_MASK;
+
+		/*FIFO is disabled*/
+		CAN2->MCR &= ~ CAN_MCR_RFEN_MASK;
+
+		/*Self reception is enabled*/
+		CAN2->MCR &= ~ CAN_MCR_SRXDIS_MASK;
+
+		/*Check all IDs*/
+		for(counter = 0; counter < MB_FILT; counter++)
+			CAN2->RXIMR[counter] = CHECK_ID;
+
+		/*Global acceptance mask to check all the IDs*/
+		CAN2->RXMGMASK = CHECK_ALL_ID;
+
+		/*Disable the RX*/
+		CAN2->RAMn[RX_MB4] = DISABLE_RX;
+
+		/*Assign the standard ID to the next word of MB4*/
+		CAN2->RAMn[RX_MB4 + 1] = TX_ID_WORD;
+
+		/*Enable the RX*/
+		CAN2->RAMn[RX_MB4] = ENABLE_RX;
+
+		/*CAN FD is not used*/
+		CAN2->MCR = CANFD_NOT_USED;
+
+		/*Wait for FRZACK to be unfrozen*/
+		while ((CAN2->MCR && CAN_MCR_FRZACK_MASK) >> CAN_MCR_FRZACK_SHIFT);
+
+		/*Wait for CAN Module to be ready*/
+		while ((CAN2->MCR && CAN_MCR_NOTRDY_MASK) >> CAN_MCR_NOTRDY_SHIFT);
+		break;
+
+	default:
+		break;
+	}
 }
 
 /*Transmit the data through of channel CAN 0 with two data */
-void CAN0_Transmitter(uint32_t dataWord1, uint32_t dataWord2)
+void CAN_Transmitter(PortCAN_t portCAN, uint32_t dataWord1, uint32_t dataWord2)
 {
-	/*Clean MB0 flag*/
-	CAN0->IFLAG1 = CLEAN_MB0;
+	switch(portCAN)
+	{
+	case CAN_0:
+		/*Clean MB0 flag*/
+		CAN0->IFLAG1 = CLEAN_MB0;
 
-	/*Data word 1 in the third position of MB0*/
-	CAN0->RAMn[TX_MB0 + 2] = dataWord1;
+		/*Data word 1 in the third position of MB0*/
+		CAN0->RAMn[TX_MB0 + 2] = dataWord1;
 
-	/*Data word 2 in the fourth position of MB0*/
-	CAN0->RAMn[TX_MB0 + 3] = dataWord2;
+		/*Data word 2 in the fourth position of MB0*/
+		CAN0->RAMn[TX_MB0 + 3] = dataWord2;
 
-	/* Standard ID 0x555, first position of MB0*/
-	CAN0->RAMn[TX_MB0 + 1] = TX_ID_WORD;
+		/* Standard ID 0x555, first position of MB0*/
+		CAN0->RAMn[TX_MB0 + 1] = TX_ID_WORD;
 
-	/*SETUP OF THE TX*/
-	/*Set the length of DLC*/
-	CAN0->RAMn[TX_MB0 + 0] |= (DLC_LENGTH << CAN_WMBn_CS_DLC_SHIFT);
+		/*SETUP OF THE TX*/
+		/*Set the length of DLC*/
+		CAN0->RAMn[TX_MB0 + 0] |= (DLC_LENGTH << CAN_WMBn_CS_DLC_SHIFT);
 
-	/*Assign the code to transmit MB*/
-	CAN0->RAMn[TX_MB0 + 0] |= CODE_FIELD_TX;
+		/*Assign the code to transmit MB*/
+		CAN0->RAMn[TX_MB0 + 0] |= CODE_FIELD_TX;
 
-	/*Set TX frame*/
-	CAN0->RAMn[TX_MB0 + 0] |= SRR_TX;
+		/*Set TX frame*/
+		CAN0->RAMn[TX_MB0 + 0] |= SRR_TX;
+		break;
+
+	case CAN_1:
+		/*Clean MB0 flag*/
+		CAN1->IFLAG1 = CLEAN_MB0;
+
+		/*Data word 1 in the third position of MB0*/
+		CAN1->RAMn[TX_MB0 + 2] = dataWord1;
+
+		/*Data word 2 in the fourth position of MB0*/
+		CAN1->RAMn[TX_MB0 + 3] = dataWord2;
+
+		/* Standard ID 0x555, first position of MB0*/
+		CAN1->RAMn[TX_MB0 + 1] = TX_ID_WORD;
+
+		/*SETUP OF THE TX*/
+		/*Set the length of DLC*/
+		CAN1->RAMn[TX_MB0 + 0] |= (DLC_LENGTH << CAN_WMBn_CS_DLC_SHIFT);
+
+		/*Assign the code to transmit MB*/
+		CAN1->RAMn[TX_MB0 + 0] |= CODE_FIELD_TX;
+
+		/*Set TX frame*/
+		CAN1->RAMn[TX_MB0 + 0] |= SRR_TX;
+		break;
+
+	case CAN_2:
+		/*Clean MB0 flag*/
+		CAN2->IFLAG1 = CLEAN_MB0;
+
+		/*Data word 1 in the third position of MB0*/
+		CAN2->RAMn[TX_MB0 + 2] = dataWord1;
+
+		/*Data word 2 in the fourth position of MB0*/
+		CAN2->RAMn[TX_MB0 + 3] = dataWord2;
+
+		/* Standard ID 0x555, first position of MB0*/
+		CAN2->RAMn[TX_MB0 + 1] = TX_ID_WORD;
+
+		/*SETUP OF THE TX*/
+		/*Set the length of DLC*/
+		CAN2->RAMn[TX_MB0 + 0] |= (DLC_LENGTH << CAN_WMBn_CS_DLC_SHIFT);
+
+		/*Assign the code to transmit MB*/
+		CAN2->RAMn[TX_MB0 + 0] |= CODE_FIELD_TX;
+
+		/*Set TX frame*/
+		CAN2->RAMn[TX_MB0 + 0] |= SRR_TX;
+		break;
+	default:
+		break;
+	}
 }
 
 /*Receive the data though the channel and only is received two data*/
-void CAN0_Receiver(uint32_t *data1, uint32_t *data2)
+void CAN_Receiver(PortCAN_t portCAN, uint32_t *data1, uint32_t *data2)
 {
 	uint8_t counter;
 	uint32_t dummy;
 
-	/*Obtain the code of RX with the first word of MB4*/
-	rx.RxCode   = (CAN0->RAMn[RX_MB4] & CODE_MASK_RX) >> SHIFT_CODE_RX;
+	switch(portCAN)
+	{
+	case CAN_0:
+		/*Obtain the code of RX with the first word of MB4*/
+		rx.RxCode   = (CAN0->RAMn[RX_MB4] & CODE_MASK_RX) >> SHIFT_CODE_RX;
 
-	/*Obtain the ID of RX with the next word of MB4*/
-	rx.RxID     = (CAN0->RAMn[RX_MB4 + 1] & CAN_WMBn_ID_ID_MASK)  >> CAN_WMBn_ID_ID_SHIFT;
+		/*Obtain the ID of RX with the next word of MB4*/
+		rx.RxID     = (CAN0->RAMn[RX_MB4 + 1] & CAN_WMBn_ID_ID_MASK)  >> CAN_WMBn_ID_ID_SHIFT;
 
-	/*Obtain the length of RX with the first word of MB4*/
-	rx.RxLength = (CAN0->RAMn[RX_MB4] & CAN_WMBn_CS_DLC_MASK) >> CAN_WMBn_CS_DLC_SHIFT;
+		/*Obtain the length of RX with the first word of MB4*/
+		rx.RxLength = (CAN0->RAMn[RX_MB4] & CAN_WMBn_CS_DLC_MASK) >> CAN_WMBn_CS_DLC_SHIFT;
 
-	/*Read the data received*/
-	for (counter = 0; counter < MAX_DATA; counter++)
-	  rx.RxData[counter] = CAN0->RAMn[RX_DATA_MB4 + counter];
+		/*Read the data received*/
+		for (counter = 0; counter < MAX_DATA; counter++)
+		  rx.RxData[counter] = CAN0->RAMn[RX_DATA_MB4 + counter];
 
-	/*Save the data received*/
-	data1 = rx.RxData[0];
-	data2 = rx.RxData[1];
+		/*Save the data received*/
+		data1 = rx.RxData[0];
+		data2 = rx.RxData[1];
 
-	/*Obtain the time stamp*/
-	rx.RxTimeStamp = (CAN0->RAMn[RX_MB4] & TIME_STAMP_RX);
+		/*Obtain the time stamp*/
+		rx.RxTimeStamp = (CAN0->RAMn[RX_MB4] & TIME_STAMP_RX);
 
-	/*Unlock message buffers*/
-	dummy = CAN0->TIMER;
+		/*Unlock message buffers*/
+		dummy = CAN0->TIMER;
 
-	/*Clean MB4 flag*/
-	CAN0->IFLAG1 = MB4_CLEAN_FLAG;
+		/*Clean MB4 flag*/
+		CAN0->IFLAG1 = MB4_CLEAN_FLAG;
+		break;
+
+	case CAN_1:
+		/*Obtain the code of RX with the first word of MB4*/
+		rx.RxCode   = (CAN1->RAMn[RX_MB4] & CODE_MASK_RX) >> SHIFT_CODE_RX;
+
+		/*Obtain the ID of RX with the next word of MB4*/
+		rx.RxID     = (CAN1->RAMn[RX_MB4 + 1] & CAN_WMBn_ID_ID_MASK)  >> CAN_WMBn_ID_ID_SHIFT;
+
+		/*Obtain the length of RX with the first word of MB4*/
+		rx.RxLength = (CAN1->RAMn[RX_MB4] & CAN_WMBn_CS_DLC_MASK) >> CAN_WMBn_CS_DLC_SHIFT;
+
+		/*Read the data received*/
+		for (counter = 0; counter < MAX_DATA; counter++)
+		  rx.RxData[counter] = CAN1->RAMn[RX_DATA_MB4 + counter];
+
+		/*Save the data received*/
+		data1 = rx.RxData[0];
+		data2 = rx.RxData[1];
+
+		/*Obtain the time stamp*/
+		rx.RxTimeStamp = (CAN1->RAMn[RX_MB4] & TIME_STAMP_RX);
+
+		/*Unlock message buffers*/
+		dummy = CAN1->TIMER;
+
+		/*Clean MB4 flag*/
+		CAN1->IFLAG1 = MB4_CLEAN_FLAG;
+		break;
+
+	case CAN_2:
+		/*Obtain the code of RX with the first word of MB4*/
+		rx.RxCode   = (CAN2->RAMn[RX_MB4] & CODE_MASK_RX) >> SHIFT_CODE_RX;
+
+		/*Obtain the ID of RX with the next word of MB4*/
+		rx.RxID     = (CAN2->RAMn[RX_MB4 + 1] & CAN_WMBn_ID_ID_MASK)  >> CAN_WMBn_ID_ID_SHIFT;
+
+		/*Obtain the length of RX with the first word of MB4*/
+		rx.RxLength = (CAN2->RAMn[RX_MB4] & CAN_WMBn_CS_DLC_MASK) >> CAN_WMBn_CS_DLC_SHIFT;
+
+		/*Read the data received*/
+		for (counter = 0; counter < MAX_DATA; counter++)
+		  rx.RxData[counter] = CAN2->RAMn[RX_DATA_MB4 + counter];
+
+		/*Save the data received*/
+		data1 = rx.RxData[0];
+		data2 = rx.RxData[1];
+
+		/*Obtain the time stamp*/
+		rx.RxTimeStamp = (CAN2->RAMn[RX_MB4] & TIME_STAMP_RX);
+
+		/*Unlock message buffers*/
+		dummy = CAN2->TIMER;
+
+		/*Clean MB4 flag*/
+		CAN2->IFLAG1 = MB4_CLEAN_FLAG;
+		break;
+	default:
+		break;
+	}
 }

@@ -21,7 +21,7 @@
 
 
 /*Pointer that saves the information about the configuration about the CAN frame*/
-const CAN0_Config_t	CAN0_Config =
+const CAN_Config_t	CAN_Config =
 {
 	OSCILLATOR_SRC,		/*Source clock*/
 	B500KHZ,			/*Bit time*/
@@ -36,8 +36,8 @@ int main(void)
 	WDOG_disable();					/*Disable the watchdog*/
 	ClockConfig();					/*Configure the clock*/
 
-	CAN0_init(&CAN0_Config);		/* Init FlexCAN0 */
-	PORT_init();             		/* Configure ports */
+	CAN_init(CAN_0, &CAN_Config);	/* Init FlexCAN0 */
+	PORT_init(CAN_0, PORT_E);             	/* Configure ports */
 
 #ifdef SBC_MC33903 					/* SPI and transceiver initialization is required */
 	  LPSPI1_init_master(); 		/* Initialize LPSPI1 for communication with MC33903 */
@@ -50,8 +50,8 @@ int main(void)
 	  for(;;)
 	  {
 		  delay(5000);
-		  CAN0_Transmitter(DATA_WORD_1, DATA_WORD_2);
-		  CAN0_Receiver (dataReceived1, dataReceived2);
+		  CAN_Transmitter(CAN_0, DATA_WORD_1, DATA_WORD_2);
+		  CAN_Receiver (CAN_0, dataReceived1, dataReceived2);
 	  }
 
 	return 0;

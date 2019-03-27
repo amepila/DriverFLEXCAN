@@ -16,6 +16,9 @@
 
 #define SBC_MC33903 	/*Transceiver CAN*/
 
+/*Port CAN*/
+typedef enum {CAN_0, CAN_1, CAN_2} PortCAN_t;
+
 /*Clock source variable*/
 typedef enum {OSCILLATOR_SRC, PERIPHERAL_SRC} clkSource_t;
 
@@ -46,7 +49,7 @@ typedef struct
 	bitTime_t	bitTime;		/*Bit time of CAN frame*/
 	clkSource_t clkSource;		/*Source clock*/
 	Timing_t	timing;			/*Timing to CAN bus*/
-} CAN0_Config_t;
+} CAN_Config_t;
 
 /*Variables needed to Rx*/
 typedef struct
@@ -63,10 +66,10 @@ typedef struct
 /********************************************************************************************/
 /*!
  	 \brief	 	Configure the CAN driver
- 	 \param[in] Pointer with the configuration
+ 	 \param[in] CAN Port and Pointer with the configuration
  	 \return 	Void
  */
-void CAN0_init(const CAN0_Config_t* CAN0_Config);
+void CAN_init(PortCAN_t portCAN, const CAN_Config_t* CAN_Config);
 
 
 /********************************************************************************************/
@@ -74,19 +77,19 @@ void CAN0_init(const CAN0_Config_t* CAN0_Config);
 /********************************************************************************************/
 /*!
  	 \brief	 	Tx to send the information
- 	 \param[in]	Data to send in the bus
+ 	 \param[in]	CAN Port and Data to send in the bus
  	 \return	Void
  */
-void CAN0_Transmitter(uint32_t dataWord1, uint32_t dataWord2);
+void CAN_Transmitter(PortCAN_t portCAN, uint32_t dataWord1, uint32_t dataWord2);
 
 /********************************************************************************************/
 /********************************************************************************************/
 /********************************************************************************************/
 /*!
  	 \brief	 	Receive the data on different fields
- 	 \param[in] References from variables where the data received is saved
+ 	 \param[in] CAN Port and References from variables where the data received is saved
  	 \return 	Void
  */
-void CAN0_Receiver(uint32_t *data1, uint32_t *data2);
+void CAN_Receiver(PortCAN_t portCAN, uint32_t *data1, uint32_t *data2);
 
 #endif /* CAN_H_ */
