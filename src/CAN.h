@@ -32,11 +32,20 @@ typedef enum
 	B1MHZ
 } bitTime_t;
 
+typedef struct
+{
+	uint8_t		propSeg;		/*Propagation Segment*/
+	uint8_t		phaseSeg1;		/*Phase Segment 1*/
+	uint8_t		phaseSeg2;		/*Phase Segment 2*/
+	uint8_t		bitSampling;	/*CAN bit sampling*/
+} Timing_t;
+
 /*Variables needed to configure the driver*/
 typedef struct
 {
-	clkSource_t		clkSource;
-	bitTime_t		bitTime;
+	bitTime_t	bitTime;		/*Bit time of CAN frame*/
+	clkSource_t clkSource;		/*Source clock*/
+	Timing_t	timing;			/*Timing to CAN bus*/
 } CAN0_Config_t;
 
 /*Variables needed to Rx*/
@@ -48,7 +57,6 @@ typedef struct
 	uint32_t  RxData[2];           /* Received message data */
 	uint32_t  RxTimeStamp;         /* Received message time */
 } Rx_t;
-
 
 /********************************************************************************************/
 /********************************************************************************************/

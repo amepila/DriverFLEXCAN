@@ -23,8 +23,12 @@
 /*Pointer that saves the information about the configuration about the CAN frame*/
 const CAN0_Config_t	CAN0_Config =
 {
-	OSCILLATOR_SRC,
-	B500KHZ
+	OSCILLATOR_SRC,		/*Source clock*/
+	B500KHZ,			/*Bit time*/
+	{7,					/*Propagation Segment*/
+	4,					/*Phase 1 Segment*/
+	4,					/*Phase 2 Segment*/
+	1}					/*Sampling bit*/
 };
 
 int main(void)
@@ -45,10 +49,9 @@ int main(void)
 
 	  for(;;)
 	  {
-		  delay();
+		  delay(5000);
 		  CAN0_Transmitter(DATA_WORD_1, DATA_WORD_2);
 		  CAN0_Receiver (dataReceived1, dataReceived2);
-		  delay();
 	  }
 
 	return 0;

@@ -14,7 +14,8 @@
 #include "S32K144.h"
 #include "CAN.h"
 
-#define MESSAGES_BUFF		(32)			/*Number of MB*/
+#define MESSAGES_BUFF		(32)			/*Number of MB for CAN0*/
+#define MESSAGES_BUFF_CAN12	(16)			/*Number of MB for CAN1 y CAN2*/
 #define WORDS_PER_MB		(4)				/*Words per Messages Buffer*/
 #define RAM_LENGTH			(128)			/*Length of the RAM*/
 #define MAX_DATA			(2)				/*Maximum of words with data*/
@@ -39,36 +40,93 @@
 #define RX_DATA_MB4			(18)			/*Position of data in MB4*/
 #define TIME_STAMP_RX		(0x000FFFF)		/*Mask to obtain the time stamp*/
 #define MB4_CLEAN_FLAG		(0x00000010)	/*Mask to clean the MB4 flag*/
-
+#define SYNC_SEGMENT		(1)				/*Synchronization Segment*/
+#define SHIFT_PSEG1			(19)			/*Shift to Phase Segment 1*/
+#define SHIFT_PSEG2			(16)			/*Shift to Phase Segment 2*/
+#define SHIFT_RJW			(22)			/*Shift to Resyn Jump Width*/
+#define SHIFT_SMP			(7)				/*Shift to Sampling bit*/
+#define SHIFT_PRESDIV		(24)			/*Shift to Prescaler divisor*/
 
 Rx_t	rx;		/*Structure of Rx*/
 
 /*Setup the configurations of the frame betweeen eight options*/
-static void CAN0_SetBitTime(bitTime_t bitTime)
+static void CAN0_SetBitTime(clkSource_t clkSource, bitTime_t bitTime, Timing_t timing)
 {
+	uint32_t time_quanta;		/*Value of time quantum*/
+	uint32_t FrequencyTimeQ;	/*Frequency time quantum*/
+	uint32_t PresDiv;			/*Prescaler divisor*/
+	uint32_t Pseg1;				/*Phase Segment 1*/
+	uint32_t Pseg2;				/*Phase Segment 2*/
+	uint32_t Proseg;			/*Propagation Segment*/
+	uint32_t Rjw;				/*Resync Jump Width*/
+
+	/*Sum all the segments to obtain the total time quantum*/
+	time_quanta = timing.phaseSeg1 + timing.phaseSeg2 + timing.propSeg + SYNC_SEGMENT;
+
+	/*Assign the Frequency of Time Quantum with each bit time required*/
 	switch(bitTime)
 	{
 	case B10KHZ:
+		FrequencyTimeQ = time_quanta * 10000;
 		break;
 	case B20KHZ:
+		FrequencyTimeQ = time_quanta * 20000;
 		break;
 	case B50KHZ:
+		FrequencyTimeQ = time_quanta * 50000;
 		break;
 	case B125KHZ:
+		FrequencyTimeQ = time_quanta * 125000;
 		break;
 	case B250KHZ:
+		FrequencyTimeQ = time_quanta * 250000;
 		break;
 	case B500KHZ:
+		FrequencyTimeQ = time_quanta * 500000;
 		break;
 	case B800KHZ:
+		FrequencyTimeQ = time_quanta * 800000;
 		break;
 	case B1MHZ:
+		FrequencyTimeQ = time_quanta * 1000000;
 		break;
 	default:
 		break;
 	}
-	/*Configure the bit time*/
-	CAN0->CTRL1 |= 0x00DB0006;
+
+	/*Calculate the prescaler divisor*/
+	PresDiv = (clkSource/FrequencyTimeQ) -  1;
+
+	/*AssigN the Prescaler divisor*/
+	CAN0->CTRL1 |= PresDiv << SHIFT_PRESDIV;
+
+	/*Calculate the phase segment 1*/
+	Pseg1 = timing.phaseSeg1 + 1;
+
+	/*Assign the Phase Segment 1*/
+	CAN0->CTRL1 |= Pseg1 << SHIFT_PSEG1;
+
+	/*Calculate the phase segment 2*/
+	Pseg2 = timing.phaseSeg2 + 1;
+
+	/*Assign the Phase Segment 2*/
+	CAN0->CTRL1 |= Pseg2 << SHIFT_PSEG2;
+
+	/*Calculate the propagation segment*/
+	Proseg = timing.propSeg - 1;
+
+	/*Assign the Propagation Segment*/
+	CAN0->CTRL1 |= Proseg;
+
+	/*Calculate the resync jump width*/
+	Rjw = timing.phaseSeg2 - 1;
+
+	/*Assign the Resyn Jump Width*/
+	CAN0->CTRL1 |= Rjw << SHIFT_RJW;
+
+	/*Assign the Sampling bit*/
+	CAN0->CTRL1 |= timing.bitSampling << SHIFT_SMP;
+
 }
 
 /*Setup the CAN0 with a selectable clock*/
@@ -101,7 +159,7 @@ void CAN0_init(const CAN0_Config_t* CAN0_Config)
 	while (!((CAN0->MCR & CAN_MCR_FRZACK_MASK) >> CAN_MCR_FRZACK_SHIFT));
 
 	/*Now we can change the register in CTRL1*/
-	CAN0_SetBitTime(CAN0_Config->bitTime);
+	CAN0_SetBitTime(CAN0_Config->clkSource, CAN0_Config->bitTime, CAN0_Config->timing);
 
 	/*Loopback is enabled*/
 	CAN0->CTRL1 |= CAN_CTRL1_LPB_MASK;
