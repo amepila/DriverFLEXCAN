@@ -18,7 +18,7 @@ void PORT_init (void) {
   PCC->PCCn[PCC_PORTE_INDEX] |= PCC_PCCn_CGC_MASK; /* Enable clock for PORTE */
   PORTE->PCR[4] |= PORT_PCR_MUX(5); /* Port E4: MUX = ALT5, CAN0_RX */
   PORTE->PCR[5] |= PORT_PCR_MUX(5); /* Port E5: MUX = ALT5, CAN0_TX */
-#ifdef SBC_MC33903 /* If board has MC33904, SPI pin config. is required */
+#if 0 /* If board has MC33904, SPI pin config. is required */
   PCC->PCCn[PCC_PORTB_INDEX] |= PCC_PCCn_CGC_MASK; /* Enable clock for PORTB */
   PORTB->PCR[14] |= PORT_PCR_MUX(3); /* Port B14: MUX = ALT3, LPSPI1_SCK */
   PORTB->PCR[15] |= PORT_PCR_MUX(3); /* Port B15: MUX = ALT3, LPSPI1_SIN */

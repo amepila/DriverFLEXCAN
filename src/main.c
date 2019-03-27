@@ -22,22 +22,18 @@ int main(void)
 	  CAN_Transmitter(); /* Transmit one message */
 	  for(;;)
 	  {
-#if 0
+#if 1
 		  CAN_Transmitter ();
 		  delay();
 		  CAN_Receiver ();
 		  delay();
+
 #endif
-#if 1
-		  CAN_Transmitter (); /* Read message */
-		  delay();
-
-		  CAN_Receiver ();
-		  delay();
-
-		  //delay();
-		  //if (/*(CAN0->IFLAG1 >> 0) &*/ 1) /* If CAN 0 MB 0 flag is set (transmit done), transmit */
-			//  CAN_Transmitter(); /* Transmit message again */
+#if 0
+		  if ((CAN0->IFLAG1 >> 4) & 1)  /* If CAN 0 MB 4 flag is set (received msg), read MB4 */
+			  CAN_Receiver ();
+		  if ((CAN0->IFLAG1 >> 0) & 1) /* If CAN 0 MB 0 flag is set (transmit done), transmit */
+			  CAN_Transmitter(); /* Transmit message again */
 #endif
 	  }
 	return 0;

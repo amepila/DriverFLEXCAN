@@ -63,10 +63,11 @@ void CAN0_init(clkSource_t clkSource, bitTime_t bitTime)
 
 	/*Now we can change the register in CTRL1*/
 	CAN0_setBitTime(bitTime);
+	CAN0->MCR &= ~ CAN_MCR_RFEN_MASK;
 
 	/*CAN has 32 MB(Message Buffers) of 4 Bytes data length, that is to say,
 	 *with 32 MB there are 128 words, then all the MB are cleaned */
-	for(counter = 0; counter < words; counter++)
+	for(counter = 0; counter < 128; counter++)
 		CAN0->RAMn[counter] = 0;
 
 	/*For testing (Pending)*/
@@ -77,7 +78,7 @@ void CAN0_init(clkSource_t clkSource, bitTime_t bitTime)
 	CAN0->RAMn[4*DATA_LENGTH_MB] = 0x04000000;
 
 	/* Node A receives msg with std ID 0x511 */
-	CAN0->RAMn[ 4*DATA_LENGTH_MB + 1] = 0x14440000; /* Msg Buf 4, word 1: Standard ID = 0x111 */
+	CAN0->RAMn[4*DATA_LENGTH_MB+1] = 0x14440000; /* Msg Buf 4, word 1: Standard ID = 0x111 */
 
 	/* PRIO = 0: CANFD not used */
 	CAN0->MCR = 0x0000001F;       /* Negate FlexCAN 1 halt state for 32 MBs */
@@ -120,13 +121,13 @@ void CAN_Receiver(void)/* Receive msg from ID 0x556 using msg buffer 4 */
 
 	  /* If CAN 0 MB 4 flag is set (received msg), read MB4 */
 	  /* Read CODE field */
-	  RxCODE   = (CAN0->RAMn[ 4*DATA_LENGTH_MB + 0] & 0x07000000) >> 24;
-	  RxID     = (CAN0->RAMn[ 4*DATA_LENGTH_MB + 1] & CAN_WMBn_ID_ID_MASK)  >> CAN_WMBn_ID_ID_SHIFT ;
-	  RxLENGTH = (CAN0->RAMn[ 4*DATA_LENGTH_MB + 0] & CAN_WMBn_CS_DLC_MASK) >> CAN_WMBn_CS_DLC_SHIFT;
+	  RxCODE   = (CAN0->RAMn[4*DATA_LENGTH_MB] & 0x07000000) >> 24;
+	  RxID     = (CAN0->RAMn[4*DATA_LENGTH_MB+1] & CAN_WMBn_ID_ID_MASK)  >> CAN_WMBn_ID_ID_SHIFT ;
+	  RxLENGTH = (CAN0->RAMn[4*DATA_LENGTH_MB] & CAN_WMBn_CS_DLC_MASK) >> CAN_WMBn_CS_DLC_SHIFT;
 
 	  /* Read two words of data (8 bytes) */
 	  for (j=0; j<2; j++) {
-		RxDATA[j] = CAN0->RAMn[ 4*DATA_LENGTH_MB + 2 + j];
+		RxDATA[j] = CAN0->RAMn[4*DATA_LENGTH_MB + 2 + j];
 	  }
 	  RxTIMESTAMP = (CAN0->RAMn[ 0*DATA_LENGTH_MB + 0] & 0x000FFFF);
 
