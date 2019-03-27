@@ -29,9 +29,15 @@ int main(void)
 		  delay();
 #endif
 #if 1
-		  CAN_Receiver (); /* Read message */
-		  if ((CAN0->IFLAG1 >> 0) & 1) /* If CAN 0 MB 0 flag is set (transmit done), transmit */
-			  CAN_Transmitter(); /* Transmit message again */
+		  CAN_Transmitter (); /* Read message */
+		  delay();
+
+		  CAN_Receiver ();
+		  delay();
+
+		  //delay();
+		  //if (/*(CAN0->IFLAG1 >> 0) &*/ 1) /* If CAN 0 MB 0 flag is set (transmit done), transmit */
+			//  CAN_Transmitter(); /* Transmit message again */
 #endif
 	  }
 	return 0;

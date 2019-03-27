@@ -2,7 +2,7 @@
 #include "CAN.h"
 
 #define MESSAGES_BUFF	32
-#define DATA_LENGTH_MB	8
+#define DATA_LENGTH_MB	4
 
 uint32_t  RxCODE;              /* Received message buffer code */
 uint32_t  RxID;                /* Received message ID */
@@ -64,7 +64,7 @@ void CAN0_init(clkSource_t clkSource, bitTime_t bitTime)
 	/*Now we can change the register in CTRL1*/
 	CAN0_setBitTime(bitTime);
 
-	/*CAN has 32 MB(Message Buffers) of 8 Bytes data length, that is to say,
+	/*CAN has 32 MB(Message Buffers) of 4 Bytes data length, that is to say,
 	 *with 32 MB there are 128 words, then all the MB are cleaned */
 	for(counter = 0; counter < words; counter++)
 		CAN0->RAMn[counter] = 0;
@@ -119,22 +119,19 @@ void CAN_Receiver(void)/* Receive msg from ID 0x556 using msg buffer 4 */
 	  uint32_t dummy;
 
 	  /* If CAN 0 MB 4 flag is set (received msg), read MB4 */
-	  if ((CAN0->IFLAG1 >> 4) & 1)
-	  {
-		  /* Read CODE field */
-		  RxCODE   = (CAN0->RAMn[ 4*DATA_LENGTH_MB + 0] & 0x07000000) >> 24;
-		  RxID     = (CAN0->RAMn[ 4*DATA_LENGTH_MB + 1] & CAN_WMBn_ID_ID_MASK)  >> CAN_WMBn_ID_ID_SHIFT ;
-		  RxLENGTH = (CAN0->RAMn[ 4*DATA_LENGTH_MB + 0] & CAN_WMBn_CS_DLC_MASK) >> CAN_WMBn_CS_DLC_SHIFT;
+	  /* Read CODE field */
+	  RxCODE   = (CAN0->RAMn[ 4*DATA_LENGTH_MB + 0] & 0x07000000) >> 24;
+	  RxID     = (CAN0->RAMn[ 4*DATA_LENGTH_MB + 1] & CAN_WMBn_ID_ID_MASK)  >> CAN_WMBn_ID_ID_SHIFT ;
+	  RxLENGTH = (CAN0->RAMn[ 4*DATA_LENGTH_MB + 0] & CAN_WMBn_CS_DLC_MASK) >> CAN_WMBn_CS_DLC_SHIFT;
 
-		  /* Read two words of data (8 bytes) */
-		  for (j=0; j<2; j++) {
-		    RxDATA[j] = CAN0->RAMn[ 4*DATA_LENGTH_MB + 2 + j];
-		  }
-		  RxTIMESTAMP = (CAN0->RAMn[ 0*DATA_LENGTH_MB + 0] & 0x000FFFF);
-
-		  /* Read TIMER to unlock message buffers */
-		  dummy = CAN0->TIMER;
-		  /* Clear CAN 0 MB 4 flag without clearing others*/
-		  CAN0->IFLAG1 = 0x00000010;
+	  /* Read two words of data (8 bytes) */
+	  for (j=0; j<2; j++) {
+		RxDATA[j] = CAN0->RAMn[ 4*DATA_LENGTH_MB + 2 + j];
 	  }
+	  RxTIMESTAMP = (CAN0->RAMn[ 0*DATA_LENGTH_MB + 0] & 0x000FFFF);
+
+	  /* Read TIMER to unlock message buffers */
+	  dummy = CAN0->TIMER;
+	  /* Clear CAN 0 MB 4 flag without clearing others*/
+	  CAN0->IFLAG1 = 0x00000010;
 }
