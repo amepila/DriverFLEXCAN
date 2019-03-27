@@ -1,16 +1,46 @@
-/*
- * GPIO.h
- *
- *  Created on: Mar 26, 2019
- *      Author: C18561
+/**
+ *	\file	GPIO.h
+ *	\brief
+ *			This is the source of GPIO in baremetal environment
+ *			where the watch dog and ports are disabled and enabled
+ *			respectively.
+ *	\author ACE TEAM
+ *			Andres Hernandez
+ *			Carem Bernabe
+ *			Eric Guedea
+ *	\date	27/03/2019
  */
-
 #ifndef GPIO_H_
 #define GPIO_H_
 
+/********************************************************************************************/
+/********************************************************************************************/
+/********************************************************************************************/
+/*!
+ 	 \brief	 	Disable the watchdog
+ 	 \param[in] Void
+ 	 \return 	Void
+ */
 void WDOG_disable (void);
-void PORT_init (void);
-void delay(void);
 
+/********************************************************************************************/
+/********************************************************************************************/
+/********************************************************************************************/
+/*!
+ 	 \brief	 	Configure the needed clock
+ 	 \param[in] Void
+ 	 \return 	Void
+ */
+void PORT_init (void);
+
+/********************************************************************************************/
+/********************************************************************************************/
+/********************************************************************************************/
+/*!
+ 	 \brief	 	Configure a delay
+ 	 \param[in] Count
+ 	 \return 	Void
+ */
+void delay(uint32_t count);
 
 #endif /* GPIO_H_ */

@@ -12,7 +12,8 @@
 
 #ifdef SBC_MC33903  /* If board has MC33903, SPI pin config. is required */
 
-void LPSPI1_init_master(void) {
+void LPSPI1_init_master (void)
+{
   PCC->PCCn[PCC_LPSPI1_INDEX] = 0;          /* Disable clocks to modify PCS ( default) */
   PCC->PCCn[PCC_LPSPI1_INDEX] = 0xC6000000; /* Enable PCS=SPLL_DIV2 (40 MHz func'l clock) */
 
@@ -59,44 +60,48 @@ void LPSPI1_init_master(void) {
                                 /* MEN=1: Module is enabled */
 }
 
-void LPSPI1_init_MC33903(void) {
-  uint32_t i = 0;                 /* Loop counter */
-  uint16_t MC33903_spi_init[] = { /* SPI commands and data to initialize MC33903C */
-    0x2580,                     /* Read SAFE register flags: bits 4:0 contain nonzero ID */
-    0xDF80,                     /* Read Vreg High flags:  */
-    0x5A00,                     /* Write Watchdog reg.: Enter NORMAL mode*/
-    0x5E10,                     /* Write Regulator reg.: Enable 5V CAN regulator */
-    0x60C0,                     /* Write CAN reg.: CAN in Tx & Rx modes, fast slew */
-    0x66C4};                    /* Write LIN/1 reg.: Tx/Rx mode, 20 Kbps slew, term. on */
-  uint16_t spi_result = 0;      /* Result received SPI data from SBC */
+void LPSPI1_init_MC33903 (void)
+{
+	uint32_t i = 0;                			/* Loop counter */
+	uint16_t MC33903_spi_init[] = { 		/* SPI commands and data to initialize MC33903C */
+			0x2580,                    		/* Read SAFE register flags: bits 4:0 contain nonzero ID */
+			0xDF80,                     	/* Read Vreg High flags:  */
+			0x5A00,                     	/* Write Watchdog reg.: Enter NORMAL mode*/
+			0x5E10,                     	/* Write Regulator reg.: Enable 5V CAN regulator */
+			0x60C0,                     	/* Write CAN reg.: CAN in Tx & Rx modes, fast slew */
+			0x66C4};                    	/* Write LIN/1 reg.: Tx/Rx mode, 20 Kbps slew, term. on */
+	uint16_t spi_result = 0;      			/* Result received SPI data from SBC */
 
                              /* Note: MC33904 DBG input on EVB is tied to 9V nominal, */
                              /*       which puts device in a debug state */
                              /*       which disables the SBC's watchdog. */
-  for (i=0; i< sizeof (MC33903_spi_init)/2; i++) {
-    LPSPI1_transmit_16bits (MC33903_spi_init[i]);   /* Transmit to MC33904 */
-    spi_result =  LPSPI1_receive_16bits();          /* Read result */
+	for (i = 0; i < sizeof (MC33903_spi_init) / 2; i++)
+	{
+		LPSPI1_transmit_16bits (MC33903_spi_init[i]);   /* Transmit to MC33904 */
+		spi_result =  LPSPI1_receive_16bits();          /* Read result */
                              /* Note: It is good practice to verify SPI configuration by */
                              /*       reading appropriate flags/registers, especially */
                              /*       fault flags, after configuration routines. */
-  }
+	}
 }
 
-void LPSPI1_transmit_16bits (uint16_t send) {
-  while((LPSPI1->SR & LPSPI_SR_TDF_MASK)>>LPSPI_SR_TDF_SHIFT==0);
+void LPSPI1_transmit_16bits (uint16_t send)
+{
+	while((LPSPI1->SR & LPSPI_SR_TDF_MASK) >> (LPSPI_SR_TDF_SHIFT == 0));
                                    /* Wait for Tx FIFO available */
-  LPSPI1->TDR = send;              /* Transmit data */
-  LPSPI1->SR |= LPSPI_SR_TDF_MASK; /* Clear TDF flag */
+	LPSPI1->TDR = send;              /* Transmit data */
+	LPSPI1->SR |= LPSPI_SR_TDF_MASK; /* Clear TDF flag */
 }
 
-uint16_t LPSPI1_receive_16bits (void) {
+uint16_t LPSPI1_receive_16bits (void)
+{
   uint16_t recieve = 0;
 
-  while((LPSPI1->SR & LPSPI_SR_RDF_MASK)>>LPSPI_SR_RDF_SHIFT==0);
-                                   /* Wait at least one RxFIFO entry */
-  recieve= LPSPI1->RDR;            /* Read received data */
-  LPSPI1->SR |= LPSPI_SR_RDF_MASK; /* Clear RDF flag */
-  return recieve;                  /* Return received data */
+  while((LPSPI1->SR & LPSPI_SR_RDF_MASK) >> (LPSPI_SR_RDF_SHIFT == 0));
+                                   	   	/* Wait at least one RxFIFO entry */
+  recieve = LPSPI1->RDR;            	/* Read received data */
+  LPSPI1->SR |= LPSPI_SR_RDF_MASK; 		/* Clear RDF flag */
+  return recieve;                  		/* Return received data */
 }
 
 #endif

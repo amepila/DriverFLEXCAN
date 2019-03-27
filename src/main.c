@@ -1,40 +1,55 @@
+/**
+ *	\file	main.c
+ *	\brief
+ *			This is the main of driver where the driver is
+ *			tested with the transmission and reception.
+ *	\author ACE TEAM
+ *			Andres Hernandez
+ *			Carem Bernabe
+ *			Eric Guedea
+ *	\date	27/03/2019
+ */
+
 #include "S32K144.h"
 #include "CAN.h"
 #include "LPSPI.h"
 #include "GPIO.h"
 #include "clock_and_modes.h"
 
+#define DATA_WORD_1			(0xA5112233)	/*Data word 1 to transmit*/
+#define DATA_WORD_2			(0x44556677)	/*Data word 2 to transmit*/
+
+
+/*Pointer that saves the information about the configuration about the CAN frame*/
+const CAN0_Config_t	CAN0_Config =
+{
+	OSCILLATOR_SRC,
+	B500KHZ
+};
+
 int main(void)
 {
-	WDOG_disable();
-	SOSC_init_8MHz();       /* Initialize system oscillator for 8 MHz xtal */
-	SPLL_init_160MHz();     /* Initialize SPLL to 160 MHz with 8 MHz SOSC */
-	NormalRUNmode_80MHz();  /* Init clocks: 80 MHz sysclk & core, 40 MHz bus, 20 MHz flash */
+	WDOG_disable();					/*Disable the watchdog*/
+	ClockConfig();					/*Configure the clock*/
 
-	CAN0_init(OSCILLATOR_SRC, B500KHZ);         /* Init FlexCAN0 */
-	PORT_init();             /* Configure ports */
+	CAN0_init(&CAN0_Config);		/* Init FlexCAN0 */
+	PORT_init();             		/* Configure ports */
 
-	#ifdef SBC_MC33903 /* SPI and transceiver initialization is required */
-	  LPSPI1_init_master(); /* Initialize LPSPI1 for communication with MC33903 */
-	  LPSPI1_init_MC33903(); /* Configure SBC via SPI for CAN transceiver operation */
-	#endif
+#ifdef SBC_MC33903 					/* SPI and transceiver initialization is required */
+	  LPSPI1_init_master(); 		/* Initialize LPSPI1 for communication with MC33903 */
+	  LPSPI1_init_MC33903(); 		/* Configure SBC via SPI for CAN transceiver operation */
+#endif
 
-	  CAN_Transmitter(); /* Transmit one message */
+	  uint32_t *dataReceived1;		/*Data to save the information from RX*/
+	  uint32_t *dataReceived2;		/*Data to save the information from RX*/
+
 	  for(;;)
 	  {
-#if 1
-		  CAN_Transmitter ();
 		  delay();
-		  CAN_Receiver ();
+		  CAN0_Transmitter(DATA_WORD_1, DATA_WORD_2);
+		  CAN0_Receiver (dataReceived1, dataReceived2);
 		  delay();
-
-#endif
-#if 0
-		  if ((CAN0->IFLAG1 >> 4) & 1)  /* If CAN 0 MB 4 flag is set (received msg), read MB4 */
-			  CAN_Receiver ();
-		  if ((CAN0->IFLAG1 >> 0) & 1) /* If CAN 0 MB 0 flag is set (transmit done), transmit */
-			  CAN_Transmitter(); /* Transmit message again */
-#endif
 	  }
+
 	return 0;
 }
