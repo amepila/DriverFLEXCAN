@@ -17,9 +17,17 @@ typedef enum
 	B1MHZ
 } bitTime_t;
 
+typedef struct
+{
+	uint32_t  RxCode;              /* Received message buffer code */
+	uint32_t  RxID;                /* Received message ID */
+	uint32_t  RxLength;            /* Received message number of data bytes */
+	uint32_t  RxData[2];           /* Received message data */
+	uint32_t  RxTimeStamp;         /* Received message time */
+} Rx_t;
 
 void CAN0_init(clkSource_t clkSource, bitTime_t bitTime);
-void CAN_Transmitter(void);
-void CAN_Receiver(void);
+void CAN0_Transmitter(void);
+void CAN0_Receiver(void);
 
 #endif /* CAN_H_ */
